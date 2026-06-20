@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成考后台 · 手机号白名单管理</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
+        body {
+            background: linear-gradient(145deg, #e8edf3 0%, #d5dee8 100%);
+            min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 30px;
+        }
+        .admin-wrapper {
+            max-width: 860px; width: 100%; background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(12px); border-radius: 40px;
+            box-shadow: 0 30px 60px -16px rgba(0,20,30,0.35);
+            padding: 32px 36px 40px;
+        }
+        .admin-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 28px; padding-bottom: 16px; border-bottom: 2px solid #e2eaf2;
+            flex-wrap: wrap; gap: 12px;
+        }
+        .admin-header h1 { font-size: 1.7rem; color: #0a2a38; }
+        .admin-header h1 i { color: #2f7a9e; margin-right: 10px; }
+        .admin-header .logout-btn {
+            background: #eef4f9; border: none; padding: 10px 22px; border-radius: 40px;
+            font-weight: 600; color: #b13e3e; cursor: pointer; transition: 0.15s;
+            border: 1px solid #f0d0d0;
+        }
+        .admin-header .logout-btn:hover { background: #fde8e8; }
+
+        .login-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+            backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center;
+            z-index: 999;
+        }
+        .login-box {
+            background: white; border-radius: 40px; padding: 40px 44px; max-width: 400px; width: 90%;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+        }
+        .login-box h2 { font-size: 1.5rem; color: #0a2a38; margin-bottom: 8px; }
+        .login-box p { color: #5f7e93; margin-bottom: 24px; font-size: 0.95rem; }
+        .login-box input {
+            width: 100%; padding: 14px 20px; border: 1.5px solid #d5e3ec; border-radius: 60px;
+            font-size: 1rem; outline: none; margin-bottom: 16px; background: #f2f8fe;
+        }
+        .login-box input:focus { border-color: #2f8db0; background: white; }
+        .login-box .btn-login {
+            width: 100%; padding: 14px; background: #1a4d66; color: white; border: none;
+            border-radius: 60px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: 0.15s;
+        }
+        .login-box .btn-login:hover { background: #0f3f55; }
+        .login-error { color: #b13e3e; font-size: 0.9rem; margin-top: 8px; display: none; }
+        .login-box .config-hint {
+            margin-top: 14px; font-size: 0.75rem; color: #8aaec2; text-align: center;
+            border-top: 1px solid #eee; padding-top: 14px;
+        }
+
+        .stats-bar {
+            display: flex; gap: 30px; background: #eaf3fa; padding: 14px 24px;
+            border-radius: 60px; margin-bottom: 24px; flex-wrap: wrap;
+        }
+        .stats-bar span { font-weight: 500; color: #1f4b62; }
+        .stats-bar span i { color: #2f7a9e; margin-right: 6px; }
+
+        .add-area {
+            display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;
+        }
+        .add-area input {
+            flex: 1; min-width: 180px; padding: 14px 20px; border: 1.5px solid #d5e3ec;
+            border-radius: 60px; font-size: 1rem; outline: none; background: #f2f8fe;
+        }
+        .add-area input:focus { border-color: #2f8db0; background: white; }
+        .add-area .btn-add {
+            padding: 14px 32px; background: #1f7a5a; color: white; border: none;
+            border-radius: 60px; font-weight: 600; cursor: pointer; transition: 0.15s;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .add-area .btn-add:hover { background: #146348; }
+        .add-area .btn-refresh {
+            padding: 14px 20px; background: #dce8f2; color: #1f4b62; border: none;
+            border-radius: 60px; font-weight: 600; cursor: pointer; transition: 0.15s;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .add-area .btn-refresh:hover { background: #c5dceb; }
+
+        .table-wrap {
+            background: #f8fbfe; border-radius: 24px; overflow: hidden;
+            border: 1px solid #e2eaf2;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 16px 20px; background: #eaf3fa; color: #174052; font-weight: 600; }
+        td { padding: 14px 20px; border-top: 1px solid #e8eef5; color: #1f3d4f; }
+        .phone-cell { font-weight: 600; font-size: 1.05rem; letter-spacing: 0.5px; }
+        .badge-bound { background: #dff0e6; color: #1b6b4a; padding: 4px 14px; border-radius: 40px; font-size: 0.8rem; font-weight: 600; }
+        .btn-delete {
+            background: #fee8e8; border: none; padding: 6px 16px; border-radius: 40px;
+            color: #b13e3e; font-weight: 600; cursor: pointer; transition: 0.15s;
+        }
+        .btn-delete:hover { background: #fcd5d5; }
+        .empty-row td { text-align: center; color: #8aaec2; padding: 40px 20px; }
+        .loading-row td { text-align: center; color: #5f7e93; padding: 30px 20px; }
+
+        .footer-tip { margin-top: 20px; font-size: 0.85rem; color: #5f7e93; text-align: center; }
+        .footer-tip i { color: #2f7a9e; }
+
+        .toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: #1a2a38; color: white; padding: 14px 32px; border-radius: 60px;
+            font-weight: 500; z-index: 999; opacity: 0; transition: opacity 0.4s;
+            pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .toast.show { opacity: 1; }
+        .toast.success { background: #1f7a5a; }
+        .toast.error { background: #b13e3e; }
+
+        @media (max-width: 600px) {
+            .admin-wrapper { padding: 20px; }
+            .admin-header { flex-direction: column; align-items: start; }
+            .stats-bar { gap: 14px; }
+            .add-area { flex-direction: column; }
+            .add-area .btn-add, .add-area .btn-refresh { justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+        <h2><i class="fas fa-lock" style="color:#2f7a9e;"></i> 管理员登录</h2>
+        <p>输入密码进入后台管理手机号白名单</p>
+        <input type="password" id="adminPwdInput" placeholder="请输入管理密码" autocomplete="off">
+        <button class="btn-login" id="loginBtn"><i class="fas fa-sign-in-alt"></i> 登录</button>
+        <div class="login-error" id="loginError">❌ 密码错误，请重试</div>
+        <div class="config-hint">
+            <i class="fas fa-info-circle"></i> 默认密码: admin888
+        </div>
+    </div>
+</div>
+
+<div class="admin-wrapper" id="adminMain" style="display:none;">
+    <div class="admin-header">
+        <h1><i class="fas fa-users-cog"></i> 手机号白名单</h1>
+        <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+            <span class="sync-status" id="syncStatus"><i class="fas fa-cloud-upload-alt"></i> 已同步</span>
+            <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> 退出</button>
+        </div>
+    </div>
+
+    <div class="stats-bar">
+        <span><i class="fas fa-phone-alt"></i> 已绑定: <strong id="totalCount">0</strong> 个</span>
+        <span><i class="fas fa-database"></i> 数据存储于 Supabase 云端</span>
+    </div>
+
+    <div class="add-area">
+        <input type="tel" id="newPhoneInput" placeholder="输入11位手机号" maxlength="11">
+        <button class="btn-add" id="addBtn"><i class="fas fa-plus-circle"></i> 绑定</button>
+        <button class="btn-refresh" id="refreshBtn"><i class="fas fa-sync-alt"></i> 刷新</button>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>手机号</th><th>状态</th><th style="text-align:right;">操作</th></tr>
+            </thead>
+            <tbody id="phoneTableBody">
+                <tr class="loading-row"><td colspan="3"><i class="fas fa-spinner fa-spin"></i> 加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer-tip">
+        <i class="fas fa-database"></i> 数据存储在 Supabase 云端，换电脑也能同步管理
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ================================================================
+        // ★★★ 配置区 ★★★
+        // ================================================================
+        const ADMIN_PASSWORD = 'admin888';
+
+        // ★★★ Supabase 配置（替换为你的） ★★★
+        const SUPABASE_URL = 'https://pexthueueakiugsyhrlh.supabase.co';
+        // 请确保这一行是你刚刚复制的完整密钥，不要手动输入
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBleHRodWV1YWVraXVnc3locmxoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5NDUwNTgsImV4cCI6MjA5NzUyMTA1OH0.bcpscIbQR6t44T6ynz0BBVrytqV_LcdUgzqIFlDgwL0';
+
+        // ================================================================
+        // Supabase 数据操作
+        // ================================================================
+        async function querySupabase(query, options = {}) {
+            const url = `${SUPABASE_URL}/rest/v1/${query}`;
+            const headers = {
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                'Content-Type': 'application/json'
+            };
+
+            const response = await fetch(url, {
+                method: options.method || 'GET',
+                headers: headers,
+                body: options.body ? JSON.stringify(options.body) : undefined
+            });
+
+            if (!response.ok) {
+                throw new Error(`Supabase API 错误: ${response.status}`);
+            }
+            return await response.json();
+        }
+
+        async function fetchPhoneList() {
+            const result = await querySupabase('phone_whitelist?select=phone');
+            return result.map(item => item.phone);
+        }
+
+        async function addPhoneToCloud(phone) {
+            await querySupabase('phone_whitelist', {
+                method: 'POST',
+                body: { phone: phone }
+            });
+        }
+
+        async function deletePhoneFromCloud(phone) {
+            await querySupabase(`phone_whitelist?phone=eq.${phone}`, {
+                method: 'DELETE'
+            });
+        }
+
+        // ================================================================
+        // UI
+        // ================================================================
+        const loginOverlay = document.getElementById('loginOverlay');
+        const adminMain = document.getElementById('adminMain');
+        const adminPwdInput = document.getElementById('adminPwdInput');
+        const loginBtn = document.getElementById('loginBtn');
+        const loginError = document.getElementById('loginError');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const phoneTableBody = document.getElementById('phoneTableBody');
+        const totalCount = document.getElementById('totalCount');
+        const syncStatus = document.getElementById('syncStatus');
+        const newPhoneInput = document.getElementById('newPhoneInput');
+        const addBtn = document.getElementById('addBtn');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const toast = document.getElementById('toast');
+
+        let toastTimer = null;
+
+        function showToast(message, type = 'info') {
+            toast.textContent = message;
+            toast.className = 'toast';
+            if (type === 'success') toast.classList.add('success');
+            else if (type === 'error') toast.classList.add('error');
+            toast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        }
+
+        function setLoading(loading) {
+            if (loading) {
+                phoneTableBody.innerHTML = `<tr class="loading-row"><td colspan="3"><i class="fas fa-spinner fa-spin"></i> 加载中...</td></tr>`;
+            }
+        }
+
+        async function renderTable() {
+            setLoading(true);
+            try {
+                const list = await fetchPhoneList();
+                totalCount.textContent = list.length;
+                syncStatus.innerHTML = `<i class="fas fa-check-circle" style="color:#1b7a4a;"></i> 已同步 (${new Date().toLocaleTimeString()})`;
+
+                if (list.length === 0) {
+                    phoneTableBody.innerHTML = `<tr class="empty-row"><td colspan="3">暂无绑定手机号</td></tr>`;
+                    return;
+                }
+
+                let html = '';
+                list.forEach(phone => {
+                    html += `
+                        <tr>
+                            <td class="phone-cell">${phone}</td>
+                            <td><span class="badge-bound"><i class="fas fa-check-circle"></i> 已绑定</span></td>
+                            <td style="text-align:right;">
+                                <button class="btn-delete" data-phone="${phone}"><i class="fas fa-trash-alt"></i> 解绑</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                phoneTableBody.innerHTML = html;
+
+                document.querySelectorAll('.btn-delete').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const phone = this.dataset.phone;
+                        if (!confirm(`确定要解绑 ${phone} 吗？`)) return;
+                        try {
+                            await deletePhoneFromCloud(phone);
+                            showToast(`✅ ${phone} 已解绑`, 'success');
+                            await renderTable();
+                        } catch (err) {
+                            showToast(`❌ ${err.message}`, 'error');
+                        }
+                    });
+                });
+            } catch (err) {
+                syncStatus.innerHTML = `<i class="fas fa-exclamation-circle" style="color:#b13e3e;"></i> 同步失败: ${err.message}`;
+                phoneTableBody.innerHTML = `<tr class="empty-row"><td colspan="3">⚠️ 加载失败: ${err.message}</td></tr>`;
+                showToast(`❌ ${err.message}`, 'error');
+            }
+        }
+
+        async function handleAddPhone() {
+            const phone = newPhoneInput.value.trim();
+            if (!/^\d{11}$/.test(phone)) {
+                showToast('❌ 请输入11位有效手机号', 'error');
+                return;
+            }
+            try {
+                const list = await fetchPhoneList();
+                if (list.includes(phone)) {
+                    showToast('⚠️ 该手机号已绑定', 'error');
+                    return;
+                }
+                await addPhoneToCloud(phone);
+                showToast(`✅ ${phone} 绑定成功`, 'success');
+                newPhoneInput.value = '';
+                await renderTable();
+            } catch (err) {
+                showToast(`❌ ${err.message}`, 'error');
+            }
+        }
+
+        // ================================================================
+        // 登录/登出
+        // ================================================================
+        function login() {
+            const pwd = adminPwdInput.value.trim();
+            if (pwd === ADMIN_PASSWORD) {
+                loginOverlay.style.display = 'none';
+                adminMain.style.display = 'block';
+                loginError.style.display = 'none';
+                renderTable();
+                adminPwdInput.value = '';
+            } else {
+                loginError.style.display = 'block';
+                setTimeout(() => { loginError.style.display = 'none'; }, 3000);
+            }
+        }
+
+        function logout() {
+            if (confirm('确认退出后台？')) {
+                loginOverlay.style.display = 'flex';
+                adminMain.style.display = 'none';
+                adminPwdInput.value = '';
+            }
+        }
+
+        // ================================================================
+        // 事件绑定
+        // ================================================================
+        loginBtn.addEventListener('click', login);
+        adminPwdInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') login();
+        });
+
+        logoutBtn.addEventListener('click', logout);
+
+        addBtn.addEventListener('click', handleAddPhone);
+
+        newPhoneInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAddPhone();
+            }
+        });
+
+        newPhoneInput.addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '');
+        });
+
+        refreshBtn.addEventListener('click', renderTable);
+
+        if (SUPABASE_URL === 'https://你的项目地址.supabase.co') {
+            console.warn('⚠️ 请先在代码中配置 SUPABASE_URL 和 SUPABASE_ANON_KEY');
+        }
+
+        console.log('🔐 后台管理已加载 (Supabase 云端存储)');
+        console.log(`📁 项目地址: ${SUPABASE_URL}`);
+        console.log('📞 默认密码: admin888');
+    })();
+</script>
+</body>
+</html>
